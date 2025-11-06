@@ -8,7 +8,7 @@ Disponibilizado o arquivo em núvem para o time fazer a instalação via snippet
 Já com o [Rocky linux 8](https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.10-x86_64-minimal.iso) instalado na máquina e com o tmux instalado, execute o seguinte comando: 
 
 ```bash
-sudo su yum update -y && yum install tmux -y && yum install git -y && tmux new -s issabel -d "git clone https://github.com/phonevox/pissabel5.git && cd pissabel5 && chmod +x issabel5-netinstall.sh && ./issabel5-netinstall.sh"
+sudo su yum update -y && yum install tmux -y && yum install git -y && tmux new -s issabel-tmux "git clone https://github.com/phonevox/pissabel5.git && cd pissabel5 && chmod +x issabel5-netinstall.sh && ./issabel5-netinstall.sh"
 ```
 
 ## Sugestão de melhorias
