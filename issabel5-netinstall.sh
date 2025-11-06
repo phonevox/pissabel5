@@ -158,8 +158,8 @@ function sel_astver
 
 function add_repos
 {
-yum -y tmux
-yum -y htop
+yum install tmux -y
+yum install htop -y
 echo "Desativando ipv6"
 echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 cat > /etc/yum.repos.d/Issabel.repo <<EOF
