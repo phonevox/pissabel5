@@ -446,6 +446,53 @@ function check_dialog
   fi
 }
 
+function px_fix_set_php_timezone
+{
+    log "$INFO [${FUNCNAME[0]}] ===> Ajustando timezone do sistema e PHP"
+    TARGET_TZ="America/Sao_Paulo"
+    PHP_INI="/etc/php.ini"
+
+    # Ajustar timezone do sistema
+    echo "Tentando ajustar timezone com timedatectl..."
+    timedatectl set-timezone "$TARGET_TZ"
+    CURRENT_TZ=$(timedatectl show --property=Timezone --value)
+    if [ "$CURRENT_TZ" == "$TARGET_TZ" ]; then
+        echo "Timezone ajustado com sucesso: $CURRENT_TZ"
+        hwclock --hctosys
+    else
+        echo "timedatectl falhou. Aplicando fallback..."
+        ln -sf /usr/share/zoneinfo/$TARGET_TZ /etc/localtime
+        hwclock --hctosys
+        echo "Fallback aplicado com link e hwclock"
+    fi
+
+    # Detectar distribuição
+    OS_NAME=$(grep '^NAME=' /etc/os-release | cut -d= -f2 | tr -d '"')
+    echo "Sistema detectado: $OS_NAME"
+
+    if [[ "$OS_NAME" == *"Rocky"* ]] || [[ "$OS_NAME" == *"CentOS"* ]]; then
+        if [ -f "$PHP_INI" ]; then
+            cp -p "$PHP_INI" "$PHP_INI.bak.$(date +%F_%H%M)"
+            echo "Backup criado: $PHP_INI.bak.$(date +%F_%H%M)"
+            sed -i 's/^;date\.timezone\s*=.*/date.timezone = America\/Sao_Paulo/' "$PHP_INI"
+            echo "php.ini atualizado com date.timezone = America/Sao_Paulo"
+        else
+            echo "Arquivo $PHP_INI não encontrado. Ignorando ajuste PHP"
+        fi
+    else
+        echo "Sistema não é Rocky Linux nem CentOS — pulando ajuste PHP"
+    fi
+
+    # Status final
+    echo ""
+    echo "===== STATUS FINAL ====="
+    timedatectl
+    echo "========================"
+    echo "Data atual:"
+    date
+    echo ""
+}
+
 function enable_beta()
 {
   dialog --title "Are you feeling brave?" --defaultno \
@@ -483,6 +530,7 @@ function bye()
 "             O @ @\n             @ @ O\n             @ O O\n               O\n            Issabel \n\nRebooting server, log back in in a minute..." \
   10 35
 }
+
 check_dialog
 add_repos
 settings
@@ -499,5 +547,6 @@ install_packages
 post_install
 set_passwords
 cleanup
+px_fix_set_php_timezone
 bye
 reboot
