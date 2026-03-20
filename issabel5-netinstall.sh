@@ -515,6 +515,58 @@ function select_language()
   /usr/bin/issabel-change-language
 }
 
+function install_issabel_panel()
+{
+  echo "Instalando módulo control_panel..." >> /tmp/netinstall.log
+
+  # 1 - Copiar módulo
+  if [ -d "./control_panel" ]; then
+    rm -rf /var/www/html/modules/control_panel
+    cp -r ./control_panel /var/www/html/modules/
+    chown -R asterisk:asterisk /var/www/html/modules/control_panel
+    chmod -R 755 /var/www/html/modules/control_panel
+  else
+    echo "ERRO: pasta control_panel não encontrada." >> /tmp/netinstall.log
+    return 1
+  fi
+
+  # 2 - Criar recurso ACL (se não existir)
+  sqlite3 /var/www/db/acl.db "
+  INSERT INTO acl_resource (name, description)
+  SELECT 'control_panel', 'Issabel Panel'
+  WHERE NOT EXISTS (
+    SELECT 1 FROM acl_resource WHERE name='control_panel'
+  );
+  "
+
+  # 3 - Criar menu (se não existir)
+  sqlite3 /var/www/db/menu.db "
+  INSERT INTO menu (id, IdParent, Link, Name, Type, order_no)
+  SELECT 'control_panel', 'pbxconfig', '', 'Issabel Panel', 'module', 8
+  WHERE NOT EXISTS (
+    SELECT 1 FROM menu WHERE id='control_panel'
+  );
+  "
+
+  # 4 - Liberar acesso para grupo administrator
+  # id_group = 1
+  # id_action = 1 (access)
+  sqlite3 /var/www/db/acl.db "
+  INSERT INTO acl_group_permission (id_action, id_group, id_resource)
+  SELECT 
+    1,
+    1,
+    (SELECT id FROM acl_resource WHERE name='control_panel')
+  WHERE NOT EXISTS (
+    SELECT 1 FROM acl_group_permission
+    WHERE id_group=1
+    AND id_resource=(SELECT id FROM acl_resource WHERE name='control_panel')
+  );
+  "
+
+  echo "control_panel instalado com sucesso." >> /tmp/netinstall.log
+}
+
 function cleanup()
 {
 (
@@ -546,6 +598,7 @@ update_os
 install_packages
 post_install
 set_passwords
+install_issabel_panel
 cleanup
 px_fix_set_php_timezone
 bye
